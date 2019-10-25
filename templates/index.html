@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <title>Phonebook(Advanced)</title>
+</head>
+<body>
+<div class="container-fluid">
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top sticky-top">
+        <a class="navbar-brand" href="#">Phonebook</a>
+    </nav>
+    <br>
+
+    <div class="row">
+        <div class="container">
+            <button class="btn btn-flat btn-success">Add New Contact</button>
+            <hr>
+            <table class="table table-bordered table-striped" id="contacts">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Phone Number</th>
+                    <th>Address</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+                </thead >
+                <tbody >
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+<script>
+    function cust_alert(state,message){
+        html='<div id="alert" class="alert alert-'+state+' alert-dismissible fade show">' +
+            '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+            '<strong>'+state+'</strong><i>'+message+'</i>' +
+            '</div>'
+        return $( ".navbar" ).after(html);
+    }
+    $(document).ready(function () {
+        $('#contacts').DataTable({
+            processing: true,
+            "ajax": {
+                "url": "/contacts",
+                "dataType": "json",
+                "dataSrc": "data",
+                "contentType":"application/json"
+            },
+            "columns": [
+                {"data": "id"},
+                {"data": "name"},
+                {"data": "phonenumber"},
+                {"data": "address"},
+                {visible: true,
+                    targets: 2,
+                    render: function (data, type, full, meta) {
+                        return '<button class="btn btn-info btn-flat edit" name="editBtn" type="button">Edit</button>';
+                    }
+                },
+                {visible: true,
+                    targets: 2,
+                    render: function (data, type, full, meta) {
+                        return '<button class="btn btn-danger btn-flat delete" name="deleteBtn" type="button" >Delete</button>';
+                    }
+                },
+
+            ],
+
+        });
+        $('#contacts').on("click", ".edit", function (e) {
+            e.preventDefault();
+            var table = $("#contacts").DataTable();
+            var data = table.row($(this).closest("tr")).data();
+            console.log(data);
+            $.ajax({
+                type: "POST",
+                url: "/contacts",
+                data: $('#edit_form').serialize(),
+                success: function (result) {
+                }
+            });
+        });
+        $('#contacts').on("click", ".update", function (e) {
+            e.preventDefault();
+            var table = $("#contacts").DataTable();
+            var data = table.row($(this).closest("tr")).data();
+            {#console.log(data);#}
+            $.ajax({
+                type: "POST",
+                url: "/contacts",
+                data: $('#update').serialize(),
+                success: function (result) {
+                }
+            });
+        });
+        $('#contacts').on("click", ".delete", function () {
+            var table = $("#contacts").DataTable();
+            var data = table.row($(this).closest("tr")).data();
+            console.log(data);
+            $.ajax({
+                type: "DELETE",
+                url: "/contacts",
+                data:{"id":data.id},
+                success: function (result) {
+                    console.log(result);
+                    if(result.code===1){
+                        table.row($(this).parents("tr")).remove().draw(false);
+                        cust_alert('success',"Deleted Record");
+                    }else{
+                        cust_alert('error',"Could not delete: "+result.msg);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    cust_alert('error',"Error Thrown: "+thrownError);
+                }
+            });
+            table.row($(this).parents("tr")).remove().draw(false);
+        });
+    });
+</script>
+</html>

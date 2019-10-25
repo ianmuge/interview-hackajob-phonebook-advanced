@@ -1,0 +1,9 @@
+ __pycache__/
+instance/
+.webassets-cache
+.env
+.venv
+env/
+venv/
+**/*.log
+.idea/
