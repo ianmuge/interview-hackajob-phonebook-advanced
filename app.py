@@ -5,7 +5,7 @@ app = Flask(__name__)
 database_loc="./phonebook.db"
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
+init=False
 
 def initialize():
     try:
@@ -15,7 +15,7 @@ def initialize():
         conn=sql.connect(database_loc)
         print("Database created")
         conn.execute("CREATE TABLE  IF NOT EXISTS contacts"
-                     "(id INTEGER PRIMARY KEY,"
+                     "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
                      "name TEXT, "
                      "address TEXT, "
                      "phonenumber TEXT)")
@@ -37,7 +37,8 @@ def initialize():
         logger.exception(exc)
 
 
-app.before_first_request(initialize)
+if init:
+    app.before_first_request(initialize)
 
 
 def dict_factory(cursor, row):
@@ -105,21 +106,25 @@ def get_contact(id):
 
 @app.route("/contacts",methods=["POST"])
 def create_contact():
+    conn = sql.connect(database_loc)
     try:
         name = request.form["name"]
         address = request.form["address"]
         phonenumber = request.form["phonenumber"]
-
-        conn=sql.connect(database_loc)
         cur = conn.cursor()
         cur.execute("INSERT INTO contacts "
                     "(name,address,phonenumber)"
                     "VALUES(?, ?, ?);",
                     [name,address,phonenumber])
         conn.commit()
-
+        row={
+            "id":cur.lastrowid,
+            "name":name,
+            "address":address,
+            "phonenumber":phonenumber
+        }
         res = {
-            "data": "",
+            "data": row,
             "code": 1,
             "msg": "Added Successfully"
         }
@@ -137,17 +142,18 @@ def create_contact():
 
 @app.route("/contacts",methods=["PUT"])
 def update_contact():
+    conn = sql.connect(database_loc)
     try:
-        id=request.form["id"]
+        id=request.form["edit_id"]
         name = request.form["name"]
         address = request.form["address"]
         phonenumber = request.form["phonenumber"]
-        conn = sql.connect(database_loc)
+
         cur = conn.cursor()
         cur.execute("UPDATE contacts set "
                     "name=?,address=?,phonenumber=? "
                     "where id=?;",
-                    (name, address, phonenumber,id))
+                    [name, address, phonenumber,id])
         conn.commit()
         res = {
             "data": "",
@@ -168,10 +174,9 @@ def update_contact():
 
 @app.route("/contacts",methods=["DELETE"])
 def delete_contact():
+    conn = sql.connect(database_loc)
     try:
         id = request.form["id"]
-
-        conn = sql.connect(database_loc)
         cur = conn.cursor()
         cur.execute("DELETE FROM contacts WHERE id=?;",[id])
         conn.commit()
